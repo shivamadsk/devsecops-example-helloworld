@@ -75,28 +75,9 @@ def initialize() {
 }
 
 def setEnvironment() {
-    def branchName = env.BRANCH_NAME.toLowerCase()
+    def branchName = env.BRANCH_NAME
     def environment = 'dev'
     echo "branchName = ${branchName}"
-    if (branchName == "") {
-        showEnvironmentVariables()
-        throw "BRANCH_NAME is not an environment variable or is empty"
-    } else if (branchName != "master") {
-        //echo "split"
-        if (branchName.contains("/")) {
-            // ignore branch type
-            branchName = branchName.split("/")[1]
-        }
-        //echo "remove '-' characters'"
-        branchName = branchName.replace("-", "")
-        //echo "remove JIRA project name"
-        if (env.JIRA_PROJECT_NAME) {
-            branchName = branchName.replace(env.JIRA_PROJECT_NAME, "")
-        }
-        // echo "limit length"
-        branchName = branchName.take(env.MAX_ENVIRONMENTNAME_LENGTH as Integer)
-        environment += "-" + branchName
-    }
     echo "Using environment: ${environment}"
     env.ENVIRONMENT = environment
 }
@@ -112,7 +93,7 @@ def showEnvironmentVariables() {
 
 def buildApp() {
      dir("webapp") {
-        withDockerContainer("maven:3.5.0-jdk-8-alpine") { sh "mvn clean install"}
+        withDockerContainer(image: "maven:3.5.0-jdk-8-alpine", args: "-u root") { sh "mvn clean install"}
         archiveArtifacts '**/target/spring-boot-web-jsp-1.0.war'
         step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'] )
      }
